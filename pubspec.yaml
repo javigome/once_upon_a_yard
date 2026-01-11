@@ -1,0 +1,51 @@
+name: once_upon_a_yard
+description: A community sharing map for backyard abundance.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.8.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  permission_handler: ^12.0.1  
+
+  firebase_app_check: ^0.3.2+9 # Check pub.dev for the latest version if needed
+
+  # --- Google & Firebase Core ---
+  firebase_auth: ^5.6.2
+  firebase_core: ^3.15.1        # For Google Sign In
+  cloud_firestore: ^5.6.12       # Database
+  firebase_storage: ^12.4.9     # Storing plant photos
+  google_sign_in: ^6.0.0
+  
+  # --- Maps & Location ---
+  google_maps_flutter: ^2.14.0    # The Map
+  geolocator: ^10.1.0            # Getting user GPS
+  
+  # --- AI & Media ---
+  google_generative_ai: ^0.2.3   # Gemini SDK (Vertex AI)
+  image_picker: ^1.2.1           # Camera access
+  
+  # --- UI & Utilities ---
+  google_fonts: ^6.1.0           # For the "Nunito" font
+  intl: ^0.19.0                  # Date formatting (for harvest months)
+  uuid: ^4.3.3                   # Generating unique IDs for plants
+  provider: ^6.1.1               # State Management (Simple & Effective)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1 # To easily set the App Icon later
+
+# --- Asset Configuration ---
+flutter:
+  uses-material-design: true
+
+  # Ensure you create these folders in your root directory!
+  assets:
+    - assets/images/             # Store your tree icons here
+    - assets/styles/             # Store map_style.json here
+    - assets/icons/

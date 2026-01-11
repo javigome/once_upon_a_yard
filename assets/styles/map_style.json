@@ -1,0 +1,35 @@
+[
+  {
+    "featureType": "all",
+    "stylers": [
+      { "saturation": 10 }
+    ]
+  },
+  {
+    "featureType": "landscape",
+    "stylers": [
+      { "color": "#c7e8b4" } 
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#228B22" }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      { "color": "#ffffff" },
+      { "lightness": 40 }
+    ]
+  },
+  {
+    "featureType": "water",
+    "stylers": [
+      { "color": "#aee1e1" }
+    ]
+  }
+]
