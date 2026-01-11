@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
 import '../theme/theme.dart';
+import 'postcard_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -88,6 +89,20 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(Icons.calendar_month, color: Color(0xFF228B22)),
             onPressed: _pickScheduleTime,
             tooltip: "Schedule Pickup",
+          ),
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined, color: Colors.grey),
+            tooltip: "Send Thank You Postcard",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PostcardScreen(
+                  chatId: widget.chatId,
+                  otherUserName: "Neighbor", // In real app, pass actual name
+                  plantName: widget.plantName,
+                )),
+              );
+            },
           )
         ],
       ),

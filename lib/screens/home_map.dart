@@ -11,6 +11,8 @@ import 'add_harvest.dart';
 import 'pin_detail.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,14 +43,49 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMapStyle();
-    _getUserLocation();
-    _listenToHarvests();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {_showWelcomeMessage(context);});
     _loadEmojiMarkers();
+    _loadMapStyle();
+    _listenToHarvests();
+    
+    _getUserLocation();
    
   }
 // Cache to store the generated Bitmaps
   final Map<String, BitmapDescriptor> _emojiIcons = {};
+
+  Future<void> _showWelcomeMessage(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Welcome to the Community!'),
+          content: const Text(
+            'Before you start sharing and harvesting, please agree to our community safety guidelines.\n'
+            '\nFor Harvesters: By participating, you agree to enter properties at your own risk. Only pick what is explicitly offered, and be aware of potential plant allergies. Always supervise children.\n'
+            '\nFor Sharers: Please only list edible, non-toxic plants from our verified list. Ensure the pickup area is safe and accessible as described in your listing.\n'
+            '\nFor Everyone: Be a good neighbor! Only visit during posted hours and be respectful of property. This is a community based on trust and goodwill.',
+          ),
+          actions: <Widget>[
+            // TextButton(
+            //   style: TextButton.styleFrom(textStyle: Theme.of(context).textTheme.labelLarge),
+            //   child: const Text('Disable'),
+            //   onPressed: () {
+            //     Navigator.of(context).pop();
+            //   },
+            // ),
+            TextButton(
+              style: TextButton.styleFrom(textStyle: Theme.of(context).textTheme.labelLarge),
+              child: const Text('I Agree & Continue'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _loadEmojiMarkers() async {
     try {
