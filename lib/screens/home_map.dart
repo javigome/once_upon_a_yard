@@ -194,10 +194,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSpotPreview(BuildContext context, HarvestSpot spot) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Container(
-          height: 280,
+          height: 380,
           margin: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -229,9 +230,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
                         ),
                         Text(
-                          "${spot.category} • Ripe Now",
+                          "${spot.category} • Available",
                           style: TextStyle(color: Colors.grey[600]),
                         ),
+                        const SizedBox(height: 20),
+                        const Text(
+                        "About Garden",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                        Text(
+                          "Describe garden",
+                        // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Time available for pick up:",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                        Text(
+                        "Available ${spot.category}",
+                        // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
                       ],
                     ),
                     ElevatedButton(

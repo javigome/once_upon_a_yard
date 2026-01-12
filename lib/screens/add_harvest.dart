@@ -28,10 +28,15 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
   String _selectedCategory = 'Fruit';
   String _privacyLevel = 'blurred'; // exact, blurred, chat_only
   final List<String> _categories = ['Fruit', 'Herb', 'Flower', 'Vegetable', 'Other'];
-
+  bool _isNewGarden = false;
+  String? _selectedGarden;
   // Services
   final ImagePicker _picker = ImagePicker();
   final AIService _aiService = AIService();
+    // Controllers for the New Garden form
+  final TextEditingController _gardenNameController = TextEditingController();
+  final TextEditingController _gardendescriptionController = TextEditingController();
+  final List<String> _existingGardens = ['Backyard Veggies', 'Front Porch Herbs', 'Community Plot'];
 
   // --- LOGIC: AI PLANT ID ---
   Future<void> _pickAndIdentifyImage(ImageSource source) async {
@@ -146,7 +151,7 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Plant Your Flag")),
+      appBar: AppBar(title: const Text("What would you like to share?")),
       body: Stepper(
         type: StepperType.vertical,
         currentStep: _currentStep,
@@ -187,23 +192,57 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
         steps: [
           // STEP 1: LOCATION
           Step(
-            title: const Text("Where is it growing?"),
-            content: Container(
-              height: 150,
-              color: Colors.grey[200],
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.location_on, size: 40, color: Color(0xFF228B22)),
-                    Text("Using Current Location..."),
-                    Text("(Map Picker Placeholder)", style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-              ),
-            ),
             isActive: _currentStep >= 0,
             state: _currentStep > 0 ? StepState.complete : StepState.editing,
+            title: Text('Select or Create Garden'),
+            content: Column(
+              children: [
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Existing'), icon: Icon(Icons.history)),
+                    ButtonSegment(value: true, label: Text('New Garden'), icon: Icon(Icons.add_location_alt)),
+                  ],
+                  selected: {_isNewGarden},
+                  onSelectionChanged: (Set<bool> newSelection) {
+                    setState(() => _isNewGarden = newSelection.first);
+                  },
+                ),
+                SizedBox(height: 20),
+                if (!_isNewGarden)
+                  DropdownButtonFormField<String>(
+                    decoration: InputDecoration(labelText: 'Choose Garden', border: OutlineInputBorder()),
+                    value: _selectedGarden,
+                    items: _existingGardens.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                    onChanged: (val) => setState(() => _selectedGarden = val),
+                  )
+                else
+                  Column(
+                    children: [
+                      TextFormField(
+                        controller: _gardenNameController,
+                        decoration: InputDecoration(labelText: 'Garden Name', border: OutlineInputBorder()),
+                      ),
+                      SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () {}, // Location logic
+                        icon: Icon(Icons.my_location),
+                        label: Text("Get Current Location"),
+                        style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 45)),
+                      ),
+                      SizedBox(height: 12),
+                      TextFormField(
+                        controller: _gardenNameController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          hintText: 'e.g. Soil type, sun exposure...',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
 
           // STEP 2: PHOTO & AI
