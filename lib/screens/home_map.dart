@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          icon: const Icon(Icons.shield ,size: 40, color: Colors.orange),
           title: const Text('Welcome to the Community!'),
           content: const Text(
             'Before you start sharing and harvesting, please agree to our community safety guidelines.\n'
@@ -225,10 +226,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          spot.plantName ?? "Unknown Plant",
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
-                        ),
+                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              spot.plantName ?? "Unknown Plant",
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),  
+                            ),
+                            const Padding(padding: EdgeInsets.all(5.0)),
+                            Center(
+                              child: Container(
+                                width: 15, // Diameter of the circle
+                                height: 15, // Diameter of the circle
+                                decoration: const BoxDecoration(
+                                  color: Colors.green, // The color of the circle
+                                  shape: BoxShape.circle, // Makes the container a circle
+                                ),
+                              ),
+                            )],        
+                        ), 
                         Text(
                           "${spot.category} • Available",
                           style: TextStyle(color: Colors.grey[600]),
@@ -239,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
                       ),
                         Text(
-                          "Describe garden",
+                          spot.gardenDescription,
                         // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
                       ),
                       const SizedBox(height: 20),
@@ -395,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               backgroundColor: const Color(0xFF228B22),
               icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white),
-              label: const Text("Share Harvest", style: TextStyle(color: Colors.white)),
+              label: const Text("Share", style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
