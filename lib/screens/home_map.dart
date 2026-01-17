@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          icon: const Icon(Icons.shield ,size: 40, color: Colors.orange),
           title: const Text('Welcome to the Community!'),
           content: const Text(
             'Before you start sharing and harvesting, please agree to our community safety guidelines.\n'
@@ -194,10 +195,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showSpotPreview(BuildContext context, HarvestSpot spot) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return Container(
-          height: 280,
+          height: 380,
           margin: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -224,14 +226,47 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                         Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              spot.plantName ?? "Unknown Plant",
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),  
+                            ),
+                            const Padding(padding: EdgeInsets.all(5.0)),
+                            Center(
+                              child: Container(
+                                width: 15, // Diameter of the circle
+                                height: 15, // Diameter of the circle
+                                decoration: const BoxDecoration(
+                                  color: Colors.green, // The color of the circle
+                                  shape: BoxShape.circle, // Makes the container a circle
+                                ),
+                              ),
+                            )],        
+                        ), 
                         Text(
-                          spot.plantName ?? "Unknown Plant",
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
-                        ),
-                        Text(
-                          "${spot.category} • Ripe Now",
+                          "${spot.category} • Available",
                           style: TextStyle(color: Colors.grey[600]),
                         ),
+                        const SizedBox(height: 20),
+                        const Text(
+                        "About Garden",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                        Text(
+                          spot.gardenDescription,
+                        // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Time available for pick up:",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
+                        Text(
+                        "Available ${spot.category}",
+                        // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
+                      ),
                       ],
                     ),
                     ElevatedButton(
@@ -376,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               backgroundColor: const Color(0xFF228B22),
               icon: const Icon(Icons.add_location_alt_outlined, color: Colors.white),
-              label: const Text("Share Harvest", style: TextStyle(color: Colors.white)),
+              label: const Text("Share", style: TextStyle(color: Colors.white)),
             ),
           ),
         ],

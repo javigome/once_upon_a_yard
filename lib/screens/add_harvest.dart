@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:once_upon_a_yard/services/auth_services.dart';
@@ -18,20 +19,26 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
   int _currentStep = 0;
   bool _isAnalyzing = false;
   File? _selectedImage;
-  
+    final user = AuthService().currentUserId;
+   // Services
+  final ImagePicker _picker = ImagePicker();
+  final AIService _aiService = AIService();
+  final firestoreService = FirestoreService();
+
   // Form Controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
-  final user = AuthService().currentUserId;
-  
+      // Controllers for the New Garden form
+  final TextEditingController _gardenNameController = TextEditingController();
+  final TextEditingController _gardenDescriptionController = TextEditingController();
+
   // Form State
   String _selectedCategory = 'Fruit';
   String _privacyLevel = 'blurred'; // exact, blurred, chat_only
   final List<String> _categories = ['Fruit', 'Herb', 'Flower', 'Vegetable', 'Other'];
-
-  // Services
-  final ImagePicker _picker = ImagePicker();
-  final AIService _aiService = AIService();
+  bool _isNewGarden = false;
+  String? _selectedGarden;
+  // late List<String> _existingGardens;
 
   // --- LOGIC: AI PLANT ID ---
   Future<void> _pickAndIdentifyImage(ImageSource source) async {
@@ -111,7 +118,6 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
       );
 
       // 2. Call the Service
-      final firestoreService = FirestoreService();
       await firestoreService.addHarvestSpot(
         imageFile: _selectedImage!,
         plantName: _nameController.text,
@@ -119,6 +125,8 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
         description: _descController.text,
         lat: position.latitude,
         lng: position.longitude,
+        garden: _selectedGarden?.split(',').first ?? _gardenNameController.text,
+        gardenDescription: _selectedGarden?.split(',').last ?? _gardenDescriptionController.text,
         privacyLevel: _privacyLevel,
         // months: [],
         ownerId: user
@@ -142,11 +150,48 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
       );
     }
   }
+Widget _buildExistingGardenDropdown(String userId) {
+  return StreamBuilder<QuerySnapshot>(
+    // Fetching the gardens collection
+    stream: FirebaseFirestore.instance.collection('harvest_spots').where('isActive', isEqualTo: true)
+        .where('ownerId', isEqualTo: userId).where('garden', isNotEqualTo: '').snapshots().distinct(),
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return Text('Error: ${snapshot.error}');
+      }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return CircularProgressIndicator();
+      }
 
+      // Convert Firestore documents into a list of DropdownMenuItems
+      List<DropdownMenuItem<String>> gardenItems = snapshot.data!.docs.map((doc) {
+        return DropdownMenuItem<String>(
+          value: '${doc['garden']}, ${doc['gardenDescription']}', // Use document ID as the value
+          child: Text(doc['garden']), // Display the 'name' field
+        );
+      }).toList();
+      return DropdownButtonFormField<String>(
+        decoration: InputDecoration(
+          labelText: 'Choose Garden', 
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.yard, color: const Color(0xFF228B22)),
+        ),
+        value: _selectedGarden,
+        items: gardenItems,
+        onChanged: (val) {
+          setState(() {
+            _selectedGarden = val;
+          });
+        },
+        hint: Text("Select an existing garden"),
+      );
+    },
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Plant Your Flag")),
+      appBar: AppBar(title: const Text("What would you like to share?")),
       body: Stepper(
         type: StepperType.vertical,
         currentStep: _currentStep,
@@ -187,23 +232,52 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
         steps: [
           // STEP 1: LOCATION
           Step(
-            title: const Text("Where is it growing?"),
-            content: Container(
-              height: 150,
-              color: Colors.grey[200],
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.location_on, size: 40, color: Color(0xFF228B22)),
-                    Text("Using Current Location..."),
-                    Text("(Map Picker Placeholder)", style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-              ),
-            ),
             isActive: _currentStep >= 0,
             state: _currentStep > 0 ? StepState.complete : StepState.editing,
+            title: const Text('Select or Create Garden'),
+            content: Column(
+              children: [
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Existing'), icon: Icon(Icons.history)),
+                    ButtonSegment(value: true, label: Text('New Garden'), icon: Icon(Icons.add_location_alt)),
+                  ],
+                  selected: {_isNewGarden},
+                  onSelectionChanged: (Set<bool> newSelection) {
+                    setState(() => _isNewGarden = newSelection.first);
+                  },
+                ),
+                const SizedBox(height: 20),
+                if (!_isNewGarden)
+                 _buildExistingGardenDropdown(user)
+                else
+                  Column(
+                    children: [
+                      TextFormField(
+                        controller: _gardenNameController,
+                        decoration: const InputDecoration(labelText: 'Garden Name', border: OutlineInputBorder()),
+                      ),
+                      SizedBox(height: 12),
+                      // OutlinedButton.icon(
+                      //   onPressed: () {}, // Location logic
+                      //   icon: Icon(Icons.my_location),
+                      //   label: Text("Get Current Location"),
+                      //   style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 45)),
+                      // ),
+                      SizedBox(height: 12),
+                      TextFormField(
+                        controller: _gardenDescriptionController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          hintText: 'e.g. Soil type, sun exposure...',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
 
           // STEP 2: PHOTO & AI

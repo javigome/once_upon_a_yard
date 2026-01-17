@@ -25,6 +25,8 @@ class FirestoreService {
     required double lng,
     required String privacyLevel, // 'exact', 'blurred', 'chat_only'
     String? ownerId,
+    required String garden,
+    required String gardenDescription
     // required Array months
     }) async {
     try {
@@ -50,7 +52,9 @@ class FirestoreService {
         'privacyLevel': privacyLevel,
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': true,
-        'ownerId': _uid, // Placeholder until Auth is fully linked
+        'ownerId': _uid,
+        'garden': garden,
+        'gardenDescription': gardenDescription
       });
 
     }on FirebaseException catch (e) {
@@ -73,7 +77,7 @@ class FirestoreService {
          return snapshot.docs.map((doc) => HarvestSpot.fromFirestore(doc)).toList();
         });
   }
-
+ 
   // --- 3. READ: Get Single Spot Details ---
   Future<Map<String, dynamic>?> getSpotDetails(String spotId) async {
     DocumentSnapshot doc = await _db.collection('harvest_spots').doc(spotId).get();
