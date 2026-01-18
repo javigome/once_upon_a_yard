@@ -11,8 +11,6 @@ class HarvestSpot {
   final String privacyLevel; // exact, blurred, chat_only
   final DateTime? createdAt;
   final bool isActive;
-  final String? garden;
-  final String? gardenDescription;
   final String gardenId;
 
   HarvestSpot({
@@ -24,8 +22,6 @@ class HarvestSpot {
     required this.imageUrl,
     required this.location,
     required this.privacyLevel,
-    this.garden,
-    this.gardenDescription,
     required this.gardenId,
     this.createdAt,
     this.isActive = true,
@@ -45,8 +41,6 @@ class HarvestSpot {
       privacyLevel: data['privacyLevel'] ?? 'blurred',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       isActive: data['isActive'] ?? true,
-      garden: data['garden'] ?? '',
-      gardenDescription: data['gardenDescription'] ?? '',
       gardenId: data['gardenDescription'] ?? '',
     );
   }
@@ -62,9 +56,7 @@ class HarvestSpot {
       'location': location,
       'privacyLevel': privacyLevel,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-      'isActive': isActive,
-      'garden': garden,
-      'gardenDescription': gardenDescription
+      'isActive': isActive
     };
   }
 }

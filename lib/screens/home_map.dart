@@ -255,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
                       ),
                         Text(
-                          spot.gardenDescription,
+                          spot.gardenId,
                         // style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D2D2D)),
                       ),
                       const SizedBox(height: 20),

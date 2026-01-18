@@ -25,8 +25,7 @@ class FirestoreService {
     required double lng,
     required String privacyLevel, // 'exact', 'blurred', 'chat_only'
     String? ownerId,
-    required String garden,
-    required String gardenDescription
+    required String gardenId
     // required Array months
     }) async {
     try {
@@ -53,8 +52,7 @@ class FirestoreService {
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': true,
         'ownerId': _uid,
-        'garden': garden,
-        'gardenDescription': gardenDescription
+        'gardenId': gardenId,
       });
 
     }on FirebaseException catch (e) {
