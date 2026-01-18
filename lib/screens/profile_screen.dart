@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:once_upon_a_yard/data/plants.dart';
 import 'package:once_upon_a_yard/models/harvest_spot.dart';
 import '../services/auth_services.dart';
 import 'pin_detail.dart'; // To preview their own pins
@@ -59,29 +60,37 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
         // Actions
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'toggle') {
-              // Toggle Active Status
-              FirebaseFirestore.instance.collection('harvest_spots').doc(spotId).update({
-                'isActive': !isActive
-              });
-            } else if (value == 'delete') {
-               // Confirm Delete
-               FirebaseFirestore.instance.collection('harvest_spots').doc(spotId).delete();
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            PopupMenuItem<String>(
-              value: 'toggle',
-              child: Text(isActive ? 'Mark Inactive' : 'Mark Active'),
-            ),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: Text('Delete Spot', style: TextStyle(color: Colors.red)),
-            ),
+        trailing:
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RichText(text: TextSpan( text: plantEmojis[data.plantName] ?? plantEmojis['Herbs (Mixed)'],  style: const TextStyle(fontSize: 20)) ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'toggle') {
+                  // Toggle Active Status
+                  FirebaseFirestore.instance.collection('harvest_spots').doc(spotId).update({
+                    'isActive': !isActive
+                  });
+                } else if (value == 'delete') {
+                  // Confirm Delete
+                  FirebaseFirestore.instance.collection('harvest_spots').doc(spotId).delete();
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'toggle',
+                  child: Text(isActive ? 'Mark Inactive' : 'Mark Active'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Text('Delete Spot', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            )
           ],
         ),
+        
         onTap: () {
           // Preview how others see it
           // Note: Add 'id' to data manually so PinDetail works
@@ -127,6 +136,34 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buidMenuAnchor(BuildContext context) {
+    final FocusNode _buttonFocusNode = FocusNode(debugLabel: 'Menu Button');
+    final auth = AuthService();
+
+    return MenuAnchor(
+      childFocusNode: _buttonFocusNode,
+      menuChildren: [
+      MenuItemButton(onPressed: (){}, child: const Text('Mission')),
+      MenuItemButton(onPressed: (){}, child: const Text('About Us')),
+      MenuItemButton(onPressed: () async {
+              await auth.signOut();}, child: const Text('Log Out')),
+    ],
+     builder: (_, MenuController controller, Widget? child) {
+        return IconButton(
+          focusNode: _buttonFocusNode,
+          onPressed: () {
+            if (controller.isOpen) {
+              controller.close();
+            } else {
+              controller.open();
+            }
+          },
+          icon: const Icon(Icons.more_vert),
+        );
+     }
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     final auth = AuthService();
@@ -137,15 +174,7 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () async {
-              await auth.signOut();
-            },
-            tooltip: "Log Out",
-          )
-        ],
+        actions: [_buidMenuAnchor(context)],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -157,10 +186,16 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 30),
               child: Column(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 50,
-                    backgroundColor: Color(0xFFE8F5E9), // Light Green
-                    child: Icon(Icons.person, size: 50, color: Color(0xFF228B22)),
+                    backgroundColor: const Color(0xFFE8F5E9), // Light Green
+                    child: Image.asset(
+                      './assets/profile_icon/lemon.png',
+                      // height: 100,
+                      // width: 50,
+                      color: null, // Ensure no color filter is applied
+                      fit: BoxFit.scaleDown,
+                    ),
                   ),
                   const SizedBox(height: 15),
                   Text(
@@ -176,7 +211,6 @@ class ProfileScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStatChip(Icons.eco, "Karma: 120"),
                       const SizedBox(width: 10),
                       _buildStatChip(Icons.star, "Rating: 4.9"),
                     ],
@@ -261,6 +295,4 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
-
-
 }

@@ -49,3 +49,4 @@ flutter:
     - assets/images/             # Store your tree icons here
     - assets/styles/             # Store map_style.json here
     - assets/icons/
+    - assets/profile_icon/
