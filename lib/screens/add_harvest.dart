@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:once_upon_a_yard/services/auth_services.dart';
@@ -9,7 +10,9 @@ import '../services/firestore_service.dart';
 import 'package:geolocator/geolocator.dart'; // Ensure you have this for location
 
 class AddHarvestScreen extends StatefulWidget {
-  const AddHarvestScreen({super.key});
+final String? preSelectedGardenId; // New parameter
+
+  const AddHarvestScreen({super.key, this.preSelectedGardenId});
 
   @override
   State<AddHarvestScreen> createState() => _AddHarvestScreenState();
@@ -19,7 +22,7 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
   int _currentStep = 0;
   bool _isAnalyzing = false;
   File? _selectedImage;
-    final user = AuthService().currentUserId;
+    final user = AuthService();
    // Services
   final ImagePicker _picker = ImagePicker();
   final AIService _aiService = AIService();
@@ -38,7 +41,17 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
   final List<String> _categories = ['Fruit', 'Herb', 'Flower', 'Vegetable', 'Other'];
   bool _isNewGarden = false;
   String? _selectedGarden;
-  // late List<String> _existingGardens;
+
+  @override
+  void initState() {
+    super.initState();
+    // If a garden was passed in, set the state accordingly
+    if (widget.preSelectedGardenId != null) {
+      _selectedGarden = widget.preSelectedGardenId;
+      _isNewGarden = false;
+      _currentStep = 1; // Skip the "Select Garden" step and go to Photo
+    }
+  }
 
   // --- LOGIC: AI PLANT ID ---
   Future<void> _pickAndIdentifyImage(ImageSource source) async {
@@ -116,6 +129,19 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high
       );
+      String finalGardenId = widget.preSelectedGardenId ?? _selectedGarden ?? '';;
+
+      if (_isNewGarden) {
+      DocumentReference gardenRef = await FirebaseFirestore.instance.collection('gardens').add({
+        'name': _gardenNameController.text,
+        'description': _gardenDescriptionController.text,
+        'ownerId': user.currentUserId,
+        'location': GeoPoint(position.latitude, position.longitude),
+        'createdAt': FieldValue.serverTimestamp(),
+        'isActive': true
+      });
+      finalGardenId = gardenRef.id;
+    }
 
       // 2. Call the Service
       await firestoreService.addHarvestSpot(
@@ -125,11 +151,11 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
         description: _descController.text,
         lat: position.latitude,
         lng: position.longitude,
-        garden: _selectedGarden?.split(',').first ?? _gardenNameController.text,
-        gardenDescription: _selectedGarden?.split(',').last ?? _gardenDescriptionController.text,
         privacyLevel: _privacyLevel,
         // months: [],
-        ownerId: user
+        ownerId: user.currentUserId,
+        gardenId: finalGardenId, // Pass the ID, not the name string
+        ownerName: user.currentUserName
       );
 
       // 3. Success!
@@ -150,44 +176,45 @@ class _AddHarvestScreenState extends State<AddHarvestScreen> {
       );
     }
   }
-Widget _buildExistingGardenDropdown(String userId) {
-  return StreamBuilder<QuerySnapshot>(
-    // Fetching the gardens collection
-    stream: FirebaseFirestore.instance.collection('harvest_spots').where('isActive', isEqualTo: true)
-        .where('ownerId', isEqualTo: userId).where('garden', isNotEqualTo: '').snapshots().distinct(),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return Text('Error: ${snapshot.error}');
-      }
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return CircularProgressIndicator();
-      }
+  
+  Widget _buildExistingGardenDropdown(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      // Fetching the gardens collection
+      stream: FirebaseFirestore.instance.collection('gardens').where('isActive', isEqualTo: true)
+          .where('ownerId', isEqualTo: userId).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        }
 
-      // Convert Firestore documents into a list of DropdownMenuItems
-      List<DropdownMenuItem<String>> gardenItems = snapshot.data!.docs.map((doc) {
-        return DropdownMenuItem<String>(
-          value: '${doc['garden']}, ${doc['gardenDescription']}', // Use document ID as the value
-          child: Text(doc['garden']), // Display the 'name' field
+        // Convert Firestore documents into a list of DropdownMenuItems
+        List<DropdownMenuItem<String>> gardenItems = snapshot.data!.docs.map((doc) {
+          return DropdownMenuItem<String>(
+            value: doc.id, // Use document ID as the value
+            child: Text(doc['name']),
+          );
+        }).toList();
+        return DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Choose Garden', 
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.yard, color: const Color(0xFF228B22)),
+          ),
+          value: _selectedGarden,
+          items: gardenItems,
+          onChanged: (val) {
+            setState(() {
+              _selectedGarden = val;
+            });
+          },
+          hint: const Text("Select an existing garden"),
         );
-      }).toList();
-      return DropdownButtonFormField<String>(
-        decoration: InputDecoration(
-          labelText: 'Choose Garden', 
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.yard, color: const Color(0xFF228B22)),
-        ),
-        value: _selectedGarden,
-        items: gardenItems,
-        onChanged: (val) {
-          setState(() {
-            _selectedGarden = val;
-          });
-        },
-        hint: Text("Select an existing garden"),
-      );
-    },
-  );
-}
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,6 +264,13 @@ Widget _buildExistingGardenDropdown(String userId) {
             title: const Text('Select or Create Garden'),
             content: Column(
               children: [
+                _selectedGarden != null && widget.preSelectedGardenId != null
+                ? ListTile(
+                    leading: const Icon(Icons.check_circle, color: Colors.green),
+                    title: const Text("Adding to selected garden"),
+                    subtitle: Text("Garden ID: ${widget.preSelectedGardenId}"),
+                  )
+                : Column(children: [
                 SegmentedButton<bool>(
                   segments: const [
                     ButtonSegment(value: false, label: Text('Existing'), icon: Icon(Icons.history)),
@@ -247,9 +281,10 @@ Widget _buildExistingGardenDropdown(String userId) {
                     setState(() => _isNewGarden = newSelection.first);
                   },
                 ),
+                ]),
                 const SizedBox(height: 20),
                 if (!_isNewGarden)
-                 _buildExistingGardenDropdown(user)
+                 _buildExistingGardenDropdown(user.currentUserId)
                 else
                   Column(
                     children: [
@@ -257,18 +292,12 @@ Widget _buildExistingGardenDropdown(String userId) {
                         controller: _gardenNameController,
                         decoration: const InputDecoration(labelText: 'Garden Name', border: OutlineInputBorder()),
                       ),
-                      SizedBox(height: 12),
-                      // OutlinedButton.icon(
-                      //   onPressed: () {}, // Location logic
-                      //   icon: Icon(Icons.my_location),
-                      //   label: Text("Get Current Location"),
-                      //   style: OutlinedButton.styleFrom(minimumSize: Size(double.infinity, 45)),
-                      // ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _gardenDescriptionController,
                         maxLines: 3,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description',
                           hintText: 'e.g. Soil type, sun exposure...',
                           border: OutlineInputBorder(),

@@ -40,4 +40,5 @@ const Map<String, String> plantEmojis = {
   'Zucchini': '🥒',
   // Fallback
   'Other': '🌱', 
+  'Unknown Plant': '🌱'
 };
