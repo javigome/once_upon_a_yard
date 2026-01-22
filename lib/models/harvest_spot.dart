@@ -12,6 +12,7 @@ class HarvestSpot {
   final DateTime? createdAt;
   final bool isActive;
   final String gardenId;
+  final String ownerName;
 
   HarvestSpot({
     required this.id,
@@ -23,6 +24,7 @@ class HarvestSpot {
     required this.location,
     required this.privacyLevel,
     required this.gardenId,
+    required this.ownerName,
     this.createdAt,
     this.isActive = true,
   });
@@ -41,7 +43,8 @@ class HarvestSpot {
       privacyLevel: data['privacyLevel'] ?? 'blurred',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       isActive: data['isActive'] ?? true,
-      gardenId: data['gardenDescription'] ?? '',
+      gardenId: data['gardenId'] ?? '',
+      ownerName: data['ownerName'] ?? ''
     );
   }
 
@@ -56,7 +59,9 @@ class HarvestSpot {
       'location': location,
       'privacyLevel': privacyLevel,
       'createdAt': createdAt ?? FieldValue.serverTimestamp(),
-      'isActive': isActive
+      'isActive': isActive,
+      'gardenId': gardenId,
+      'ownerName': ownerId
     };
   }
 }

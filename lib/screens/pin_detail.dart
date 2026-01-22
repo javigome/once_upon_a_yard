@@ -154,7 +154,9 @@ class PinDetailScreen extends StatelessWidget {
             // Note: spotData['ownerId'] should exist. If null, we default to a test string.
             String roomId = await fs.getOrCreateChatRoom(
               spotData.id, 
-              spotData.ownerId ?? 'unknown_owner'
+              spotData.ownerId ?? 'unknown_owner',
+              spotData.plantName,
+              spotData.ownerName
             );
 
             if (context.mounted) {

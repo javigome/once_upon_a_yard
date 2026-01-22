@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:once_upon_a_yard/models/garden.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart'; // Add this to pubspec if missing
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ class FirestoreService {
 
   // Helper to get current ID
   String get _uid => _auth.currentUser?.uid ?? '';
+  String get _uName => _auth.currentUser?.displayName ?? '';
 
   // --- 1. WRITE: Create a new Harvest Spot ---
   Future<void> addHarvestSpot({
@@ -25,7 +27,8 @@ class FirestoreService {
     required double lng,
     required String privacyLevel, // 'exact', 'blurred', 'chat_only'
     String? ownerId,
-    required String gardenId
+    required String gardenId,
+    String? ownerName
     // required Array months
     }) async {
     try {
@@ -53,6 +56,7 @@ class FirestoreService {
         'isActive': true,
         'ownerId': _uid,
         'gardenId': gardenId,
+        'ownerName': ownerName
       });
 
     }on FirebaseException catch (e) {
@@ -76,6 +80,13 @@ class FirestoreService {
         });
   }
  
+   Future<Map<String, dynamic>?> getGardenDetails(String gardenId) async {
+    final DocumentSnapshot gardens = await _db.collection('gardens').doc(gardenId).get();
+    if(gardens.exists){
+      return gardens.data() as Map<String, dynamic>;
+    }
+    return null;    
+  }
   // --- 3. READ: Get Single Spot Details ---
   Future<Map<String, dynamic>?> getSpotDetails(String spotId) async {
     DocumentSnapshot doc = await _db.collection('harvest_spots').doc(spotId).get();
@@ -86,28 +97,32 @@ class FirestoreService {
   }
 
   // --- 4. CHAT: Get or Create Chat Room ---
-  Future<String> getOrCreateChatRoom(String spotId, String ownerId) async {
+  Future<String> getOrCreateChatRoom(String spotId, String ownerId, String plantName, String ownerName) async {
 
-    // 1. Check if chat already exists
-    final QuerySnapshot existing = await _db.collection('chats')
-        .where('spotId', isEqualTo: spotId)
-        .where('participants', arrayContains: _uid)
-        .get();
+    // // 1. Check if chat already exists
+    // final QuerySnapshot existing = await _db.collection('chats')
+    //     .where('spotId', isEqualTo: spotId)
+    //     .where('participants', arrayContains: _uid)
+    //     .get();
 
-    if (existing.docs.isNotEmpty) {
-      return existing.docs.first.id;
-    }
-
+// Create a unique ID for the chat to prevent duplicates
+    List<String> ids = [_uid, ownerId];
+    ids.sort(); 
+    String chatId = ids.join('_');
     // 2. Create new chat
-    final docRef = await _db.collection('chats').add({
+    await _db.collection('chats').doc(chatId).set({
       'spotId': spotId,
       'participants': [_uid, ownerId],
-      'lastMessage': 'Chat started',
+      'participantNames': {
+        'myUid': _uName,
+        'targetUserId': ownerName
+      },
+      'plantName': plantName,
+      'lastMessage': 'Started a conversation about $plantName',
       'lastUpdated': FieldValue.serverTimestamp(),
       'scheduledTime': null, // Crucial for the pickup logic
-    });
-
-    return docRef.id;
+    }, SetOptions(merge: true));
+    return chatId;
   }
 
   // --- 5. CHAT: Send Message ---
@@ -123,6 +138,7 @@ class FirestoreService {
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': text,
       'lastUpdated': FieldValue.serverTimestamp(),
+      'readBy': [_uid]
     });
   }
 

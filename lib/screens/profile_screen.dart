@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:once_upon_a_yard/data/plants.dart';
 import 'package:once_upon_a_yard/models/harvest_spot.dart';
+import 'package:once_upon_a_yard/screens/add_harvest.dart';
 import '../services/auth_services.dart';
 import 'pin_detail.dart'; // To preview their own pins
 
@@ -78,6 +79,48 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   } 
+  
+  void _confirmDeleteGarden(BuildContext context, String gardenId, String gardenName) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text("Delete $gardenName?"),
+      content: const Text("This will also remove all harvests associated with this garden. This action cannot be undone."),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+        TextButton(
+          onPressed: () async {
+            Navigator.pop(ctx);
+            _deleteGardenAndHarvests(gardenId);
+          },
+          child: const Text("DELETE", style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+}
+
+  Future<void> _deleteGardenAndHarvests(String gardenId) async {
+  final batch = FirebaseFirestore.instance.batch();
+  
+  // 1. Reference the Garden
+  DocumentReference gardenRef = FirebaseFirestore.instance.collection('gardens').doc(gardenId);
+  batch.delete(gardenRef);
+
+  // 2. Find all Harvests linked to this Garden
+  QuerySnapshot harvests = await FirebaseFirestore.instance
+      .collection('harvest_spots')
+      .where('gardenId', isEqualTo: gardenId)
+      .get();
+
+  // 3. Add them to the batch
+  for (var doc in harvests.docs) {
+    batch.delete(doc.reference);
+  }
+
+  // 4. Commit everything at once
+  await batch.commit();
+}
     // --- HELPER WIDGETS ---
   Widget _buildHarvestCard(BuildContext context, HarvestSpot data, String spotId) {
     bool isActive = data.isActive ?? true;
@@ -150,15 +193,25 @@ class ProfileScreen extends StatelessWidget {
                 }
               },
               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem(value: 'edit', child: Text('Edit Details')),
+                const PopupMenuItem(value: 'edit', child: ListTile(
+                    leading: Icon(Icons.edit_note, color: Colors.grey),
+                    title: Text('Edit Details'),
+                    contentPadding: EdgeInsets.zero,
+                  ),),
                 PopupMenuItem<String>(
                   value: 'toggle',
-                  child: Text(isActive ? 'Mark Inactive' : 'Mark Active'),
-                ),
+                  child: ListTile(
+                    leading: const Icon(Icons.check, color: Colors.green),
+                    title: Text(isActive ? 'Mark Inactive' : 'Mark Active'),
+                    contentPadding: EdgeInsets.zero,
+                  ),),
                 const PopupMenuItem<String>(
                   value: 'delete',
-                  child: Text('Delete Spot', style: TextStyle(color: Colors.red)),
-                ),
+                  child:  ListTile(
+                    leading: Icon(Icons.delete, color: Colors.red),
+                    title: Text('Delete Spot', style: TextStyle(color: Colors.red)),
+                    contentPadding: EdgeInsets.zero,
+                  ),),
               ],
             )
           ],
@@ -238,32 +291,82 @@ class ProfileScreen extends StatelessWidget {
   }
   
   Widget _buildGardenSection(BuildContext context, String gardenId, dynamic gardenData) {
-  return Column(
+    String name = gardenData['name'];
+    String description =  gardenData['description'];
+   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // Garden Header
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start, // Aligns items to the top
           children: [
-            Text(
-              gardenData['name'],
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-            if (gardenData['description'] != null)
-              Text(
-                gardenData['description'],
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            // GARDEN INFO (Left Side)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                  if (description != null)
+                    Text(
+                      description,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                ],
               ),
+            ),
+
+            // GARDEN ACTIONS (Right Side)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onSelected: (value) {
+                if (value == 'add_harvest') {
+                  // Navigate to AddHarvestScreen and pass the gardenId
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddHarvestScreen(preSelectedGardenId: gardenId),
+                    ),
+                  );
+                } else if (value == 'edit') {
+                  _showEditGardenSheet(context, gardenId, name, description);
+                } else if (value == 'delete') {
+                  _confirmDeleteGarden(context, gardenId, name);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'add_harvest',
+                  child: ListTile(
+                    leading: Icon(Icons.add_circle_outline, color: Colors.green),
+                    title: Text('Add Harvest Here'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(Icons.edit_note),
+                    title: Text('Edit Garden'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(Icons.delete_outline, color: Colors.red),
+                    title: Text('Delete Garden', style: TextStyle(color: Colors.red)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            )
           ],
         ),
       ),
-      
-      IconButton(
-              icon: const Icon(Icons.edit_note, color: Colors.grey),
-              onPressed: () => _showEditGardenSheet(context, gardenId, gardenData['name'], gardenData['description']),
-            ),
       // Nested Stream for Harvests within this Garden
       StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

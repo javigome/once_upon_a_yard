@@ -45,6 +45,20 @@ class AuthService {
     }
   }
 
+  Future<void> syncUserToFirestore(GoogleSignInAccount user) async {
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(user.id);
+
+    // set with SetOptions(merge: true) creates the doc if it doesn't exist
+    // or updates it if it does, without overwriting other fields.
+    await userDoc.set({
+      'displayName': user.displayName,
+      'email': user.email,
+      'photoURL': user.photoUrl,
+      'karma': 0,
+      'badges': [],
+      'joinedAt': FieldValue.serverTimestamp()
+    }, SetOptions(merge: true));
+}
   // --- SIGN IN ---
   Future<User?> signIn(String email, String password) async {
     try {
@@ -68,7 +82,7 @@ class AuthService {
  Future<UserCredential?> signInWithGoogle() async {
           final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
           if (googleUser == null) return null; // User cancelled
-
+          syncUserToFirestore(googleUser);
           final GoogleSignInAuthentication? googleAuth = await googleUser.authentication;
           final credential = GoogleAuthProvider.credential(
             accessToken: googleAuth?.accessToken,
@@ -76,5 +90,5 @@ class AuthService {
           );
 
           return await FirebaseAuth.instance.signInWithCredential(credential);
-        }
+  }
 }
